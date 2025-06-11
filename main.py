@@ -319,15 +319,8 @@ def blitRotate(surf, image, pos, originpos: tuple, angle: float):
 def won_screen():
     """show this screen when beating a level"""
     global attempts, fill
-    attempts = 0
+    attempts += 1
     player_sprite.clear(player.image, screen)
-    screen.fill(pygame.Color("yellow"))
-    
-    txt_win = f"Congratulations! You beat the level! Coins: {coins}/6. Press SPACE to play again, or ESC to exit"
-    won_game = font.render(txt_win, True, BLUE)
-    screen.blit(won_game, (200, 300))
-
-    wait_for_key()
     reset()
 
 
@@ -337,12 +330,6 @@ def death_screen():
     fill = 0
     player_sprite.clear(player.image, screen)
     attempts += 1
-    game_over = font.render("Game Over. [SPACE] to restart", True, WHITE)
-
-    screen.fill(pygame.Color("sienna1"))
-    screen.blits([[game_over, (100, 100)], [tip, (100, 400)]])
-
-    wait_for_key()
     reset()
 
 
