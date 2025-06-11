@@ -83,7 +83,7 @@ class Player(pygame.sprite.Sprite):
 
         self.image = pygame.transform.smoothscale(image, (32, 32))
         self.rect = self.image.get_rect(center=pos)  # get rect gets a Rect object from the image
-        self.jump_amount = 10  # jump strength
+        self.jump_amount = 11  # jump strength
         self.particles = []  # player trail
         self.isjump = False  # is the player jumping?
         self.vel = Vector2(0, 0)  # velocity starts at zero
@@ -278,7 +278,7 @@ def init_level(map):
                 Trick(trick, (x, y), elements)
 
             if col == "End":
-                End(avatar, (x, y), elements)
+                End(fin, (x, y), elements)
             x += 32
         y += 32
         x = 0
@@ -318,24 +318,14 @@ def blitRotate(surf, image, pos, originpos: tuple, angle: float):
 
 def won_screen():
     """show this screen when beating a level"""
-    global attempts, level, fill
+    global attempts, fill
     attempts = 0
     player_sprite.clear(player.image, screen)
     screen.fill(pygame.Color("yellow"))
-    txt_win1 = txt_win2 = "Nothing"
-    if level == 1:
-        if coins == 6:
-            txt_win1 = f"Coin{coins}/6! "
-            txt_win2 = "the game, Congratulations"
-    else:
-        txt_win1 = f"level{level}"
-        txt_win2 = f"Coins: {coins}/6. "
-    txt_win = f"{txt_win1} You beat {txt_win2}! Press SPACE to restart, or ESC to exit"
-
+    
+    txt_win = f"Congratulations! You beat the level! Coins: {coins}/6. Press SPACE to play again, or ESC to exit"
     won_game = font.render(txt_win, True, BLUE)
-
     screen.blit(won_game, (200, 300))
-    level += 1
 
     wait_for_key()
     reset()
@@ -378,38 +368,26 @@ def block_map(level_num):
 
 
 def start_screen():
-    """main menu. option to switch level, and controls guide, and game overview."""
+    """main menu with controls guide and game overview."""
     global level
     if not start:
         screen.fill(BLACK)
-        if pygame.key.get_pressed()[pygame.K_1]:
-            level = 0
-        if pygame.key.get_pressed()[pygame.K_2]:
-            level = 1
-
-        welcome = font.render(f"Welcome to Pydash. choose level({level + 1}) by keypad", True, WHITE)
-
+        welcome = font.render("Welcome to Pydash", True, WHITE)
         controls = font.render("Controls: jump: Space/Up exit: Esc", True, GREEN)
-
         screen.blits([[welcome, (100, 100)], [controls, (100, 400)], [tip, (100, 500)]])
-
-        level_memo = font.render(f"Level {level + 1}.", True, (255, 255, 0))
-        screen.blit(level_memo, (100, 200))
 
 
 def reset():
     """resets the sprite groups, music, etc. for death and new level"""
-    global player, elements, player_sprite, level
+    global player, elements, player_sprite
 
-    if level == 1:
-        pygame.mixer.music.load(os.path.join("music", "castle-town.mp3"))
+    pygame.mixer.music.load(os.path.join("music", "castle-town.mp3"))
     pygame.mixer_music.play()
     player_sprite = pygame.sprite.Group()
     elements = pygame.sprite.Group()
     player = Player(avatar, elements, (150, 150), player_sprite)
-    init_level(
-            block_map(
-                    level_num=levels[level]))
+    init_level(block_map(level_num="level_1.csv"))
+
 
 
 def move_map():
@@ -492,6 +470,7 @@ Global variables
 font = pygame.font.SysFont("lucidaconsole", 20)
 
 # square block face is main character the icon of the window is the block face
+fin = pygame.image.load(os.path.join("images", "fin.png"))
 avatar = pygame.image.load(os.path.join("images", "avatar.png"))  # load the main character
 pygame.display.set_icon(avatar)
 #  this surface has an alpha value with the colors, so the player trail will fade away using opacity
@@ -520,16 +499,9 @@ CameraX = 0
 attempts = 0
 coins = 0
 angle = 0
-level = 0
 
-# list
-particles = []
-orbs = []
-win_cubes = []
-
-# initialize level with
-levels = ["level_1.csv", "level_2.csv"]
-level_list = block_map(levels[level])
+# Remove level-related variables and simplify to single level
+level_list = block_map("level_1.csv")
 level_width = (len(level_list[0]) * 32)
 level_height = len(level_list) * 32
 init_level(level_list)
