@@ -29,15 +29,15 @@ ACTIONS = [0, 1]  # 0: no saltar, 1: saltar
 q_table = defaultdict(lambda: [0.0, 0.0])  # Q-table inicializada con ceros
 
 # Parámetros de aprendizaje por refuerzo
-alpha = 0.1     # tasa de aprendizaje
-gamma = 0.9     # factor de descuento
+alpha = 0.3     # tasa de aprendizaje
+gamma = 0.9    # factor de descuento
 epsilon = 0.1   # tasa de exploración
-episodes = 500
-max_steps = 500
+episodes = 1000
+max_steps = 50000
 reward_log = []
 
 # Visualización (define desde qué episodio se quiere ver el juego)
-show_from_episode = 490  # Cambia a None si no quieres ver ningún episodio
+show_from_episode = 999  # Cambia a None si no quieres ver ningún episodio
 
 # -------------- Clases del Juego --------------
 
@@ -50,7 +50,7 @@ class Player(pygame.sprite.Sprite):
         self.onGround = False
         self.vel = Vector2(0,0)
         self.isjump = False
-        self.jump_amount = 11
+        self.jump_amount = 12
         self.win = False
         self.died = False
         self.particles = []
@@ -82,10 +82,15 @@ class Player(pygame.sprite.Sprite):
             self.vel += GRAVITY
             if self.vel.y > 100:
                 self.vel.y = 100
+
+    # Agregar movimiento en el eje X
+        self.rect.x += self.vel.x  # Mueve al jugador en el eje X
+
         self.collide(0)
-        self.rect.top += self.vel.y
+        self.rect.top += self.vel.y  # Actualiza la posición en Y
         self.onGround = False
         self.collide(self.vel.y)
+
 
 # Clases de objetos del juego
 class Draw(pygame.sprite.Sprite):
@@ -112,16 +117,18 @@ def init_level(mapdata, elements):
             if col == "0": Platform(block, pos, elements)
             if col == "Spike": Spike(spike, pos, elements)
             if col == "Orb": Orb(orb, pos, elements)
-            if col == "End": End(avatar, pos, elements)
+            if col == "End": End(fin, pos, elements)
 
 # ---------------- Funciones del entorno ----------------
 
 # Estado del entorno: posición redondeada + tipo de obstáculo + si está saltando
 def get_state(player, next_obstacle_type):
-    return (round(player.rect.x, -1),
-            round(player.rect.y, -1),
+    # Se actualiza el estado basado en la posición del jugador en múltiplos de 32
+    return (player.rect.x // 32,  # Dividir la posición por 32 para obtener el "cuadrado" del jugador
+            player.rect.y//32,  # Mantener la precisión de la posición Y
             next_obstacle_type,
             int(player.isjump))
+
 
 # Encuentra el siguiente obstáculo (Spike u Orb)
 def find_next_obstacle(player, elements):
@@ -133,18 +140,23 @@ def find_next_obstacle(player, elements):
     return 0
 
 # Paso del entorno: ejecuta acción, mueve sprites, devuelve recompensa y nuevo estado
+
+import time  # Para poder utilizar time.sleep()
+
 def step_env(env, render=False):
     state, elements, player = env
+    
     # Política epsilon-greedy
     if random.random() < epsilon:
-        action = random.choice(ACTIONS)
+        action = random.choice(ACTIONS)  # Acción aleatoria (exploración)
     else:
-        action = np.argmax(q_table[state])
+        action = np.argmax(q_table[state])  # Acción según política aprendida (explotación)
 
     # Ejecuta acción
     player.isjump = (action == 1)
-    player.vel.x = 6
+    player.vel.x = 2
     player.update()
+    
     for e in elements:
         e.rect.x -= player.vel.x
 
@@ -156,23 +168,39 @@ def step_env(env, render=False):
         pygame.display.update()
         clock.tick(60)
 
-    # Calcula recompensa
+    # Calcula recompensa basada en la distancia recorrida
+    distance_reward = int(player.rect.x / 100)  # Recompensa por cada 100 píxeles avanzados
+
+    # Recompensa por sobrevivir y llegar más lejos
     done = player.died or player.win or player.rect.x >= 800
-    reward = 1
-    if player.died: reward = -20
-    if player.win or player.rect.x >= 800: reward = 50
-    if player.isjump and state[2] == 1:
+    reward = distance_reward  # Recompensa por avanzar
+
+    if player.died:
+        reward = -20  # Penaliza si muere
+    if player.win or player.rect.x >= 800: 
+        reward = 50  # Recompensa grande por ganar el nivel
+
+    if player.isjump and state[2] == 1:  # Si el siguiente obstáculo es un pincho y está saltando
         reward += 0.1
 
     # Nuevo estado
     next_obs_type = find_next_obstacle(player, elements)
     next_state = get_state(player, next_obs_type)
+
+    if done:
+        # Agregar un pequeño retraso para asegurar que los cálculos de la tabla Q se hagan antes de reiniciar
+        time.sleep(0)  # Retraso de 1 segundo, puedes ajustarlo según sea necesario
+
     return action, reward, next_state, done
+
+
+
 
 # ---------------- Cargar imágenes ----------------
 
 font = pygame.font.SysFont("lucidaconsole", 20)
 avatar = pygame.image.load(os.path.join("images", "avatar.png"))
+fin = pygame.image.load(os.path.join("images", "fin.png"))
 pygame.display.set_icon(avatar)
 spike = pygame.transform.smoothscale(pygame.image.load(os.path.join("images", "obj-spike.png")), (32,32))
 block = pygame.transform.smoothscale(pygame.image.load(os.path.join("images", "block_1.png")), (32,32))
@@ -195,12 +223,16 @@ for ep in range(episodes):
     render = show_from_episode is not None and ep+1 >= show_from_episode
 
     for s in range(max_steps):
+
         # Manejo de eventos (cierre de ventana)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
         # Ejecuta paso
+        state = get_state(player, obs_type)
+        #time.sleep(0.1)
+        #print(state)
         action, reward, next_state, done = step_env((state, elements, player), render)
         total_r += reward
         # Actualiza Q-table
@@ -208,10 +240,9 @@ for ep in range(episodes):
         q_table[state][action] = (1 - alpha) * old + alpha * (reward + gamma * max(q_table[next_state]))
         state = next_state
         if done: break
-
     reward_log.append(total_r)
     print(f"Ep {ep+1}/{episodes}, reward={total_r:.2f}")
-
+    epsilon = epsilon *0.99
 # ------------- Guardar Resultados ----------------
 
 df = pd.DataFrame({"Episode": range(1, episodes+1), "Reward": reward_log})
@@ -221,3 +252,18 @@ plt.xlabel("Episode")
 plt.ylabel("Reward")
 plt.title("Training progress")
 plt.show()
+
+import csv
+
+# Guardar la tabla Q en un archivo CSV
+with open("q_table.csv", mode="w", newline="") as file:
+    writer = csv.writer(file)
+    # Escribir las cabeceras si deseas
+    writer.writerow(["State", "Action 0 (No saltar)", "Action 1 (Saltar)"])
+    
+    # Iterar sobre cada estado y escribir las acciones correspondientes
+    for state, q_values in q_table.items():
+        # Escribir cada estado y sus valores Q correspondientes
+        writer.writerow([state] + q_values)
+
+
