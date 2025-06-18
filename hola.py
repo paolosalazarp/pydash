@@ -32,12 +32,12 @@ q_table = defaultdict(lambda: [0.0, 0.0])  # Q-table inicializada con ceros
 alpha = 0.3     # tasa de aprendizaje
 gamma = 0.9    # factor de descuento
 epsilon = 0.1   # tasa de exploración
-episodes = 1000
-max_steps = 50000
+episodes = 500
+max_steps = 5000
 reward_log = []
 
 # Visualización (define desde qué episodio se quiere ver el juego)
-show_from_episode = 999  # Cambia a None si no quieres ver ningún episodio
+show_from_episode = 490  # Cambia a None si no quieres ver ningún episodio
 
 # -------------- Clases del Juego --------------
 
@@ -69,11 +69,27 @@ class Player(pygame.sprite.Sprite):
                     self.jump_amount = 12
                     self.jump()
                     self.jump_amount = 10
-                if yvel > 0 and isinstance(p, Platform):
-                    self.rect.bottom = p.rect.top
-                    self.vel.y = 0
-                    self.onGround = True
-                    self.isjump = False
+
+                if isinstance(p, Platform):
+
+                    if yvel > 0:
+                        """if player is going down(yvel is +)"""
+                        self.rect.bottom = p.rect.top  # dont let the player go through the ground
+                        self.vel.y = 0  # rest y velocity because player is on ground
+
+                        # set self.onGround to true because player collided with the ground
+                        self.onGround = True
+
+                        # reset jump
+                        self.isjump = False
+                    elif yvel < 0:
+                        """if yvel is (-),player collided while jumping"""
+                        self.rect.top = p.rect.bottom  # player top is set the bottom of block like it hits it head
+                    else:
+                        """otherwise, if player collides with a block, he/she dies."""
+                        self.vel.x = 0
+                        self.rect.right = p.rect.left  # dont let player go through walls
+                        self.died = True
 
     def update(self):
         if self.isjump and self.onGround:
@@ -236,7 +252,7 @@ for ep in range(episodes):
     elements = pygame.sprite.Group()
     player = Player(avatar, elements, (150,150))
     player2 = Player2(avatar, elements, (150,150))
-    leveldata = block_map("level_1.csv")
+    leveldata = block_map("level_2.csv")
     init_level(leveldata, elements)
     obs_type = find_next_obstacle(player, elements)
     state = get_state(player, obs_type)
