@@ -84,12 +84,32 @@ class Player(pygame.sprite.Sprite):
                 self.vel.y = 100
 
     # Agregar movimiento en el eje X
-        self.rect.x += self.vel.x  # Mueve al jugador en el eje X
+        #self.rect.x += self.vel.x  # Mueve al jugador en el eje X
 
         self.collide(0)
         self.rect.top += self.vel.y  # Actualiza la posición en Y
         self.onGround = False
         self.collide(self.vel.y)
+
+class Player2(pygame.sprite.Sprite):
+    def __init__(self, image, platforms, pos, *groups):
+        super().__init__(*groups)
+        self.platforms = platforms
+        self.image = pygame.transform.smoothscale(image,(32,32))
+        self.rect = self.image.get_rect(center=pos)
+        self.onGround = False
+        self.vel = Vector2(0,0)
+        self.isjump = False
+        self.jump_amount = 12
+        self.win = False
+        self.died = False
+        self.particles = []
+
+
+    def update(self):
+
+    # Agregar movimiento en el eje X
+        self.rect.x += self.vel.x  # Mueve al jugador en el eje X
 
 
 # Clases de objetos del juego
@@ -124,7 +144,7 @@ def init_level(mapdata, elements):
 # Estado del entorno: posición redondeada + tipo de obstáculo + si está saltando
 def get_state(player, next_obstacle_type):
     # Se actualiza el estado basado en la posición del jugador en múltiplos de 32
-    return (player.rect.x // 32,  # Dividir la posición por 32 para obtener el "cuadrado" del jugador
+    return (player2.rect.x // 32,  # Dividir la posición por 32 para obtener el "cuadrado" del jugador
             player.rect.y//32,  # Mantener la precisión de la posición Y
             next_obstacle_type,
             int(player.isjump))
@@ -154,8 +174,10 @@ def step_env(env, render=False):
 
     # Ejecuta acción
     player.isjump = (action == 1)
-    player.vel.x = 2
+    player.vel.x = 6
+    player2.vel.x = 6
     player.update()
+    player2.update()
     
     for e in elements:
         e.rect.x -= player.vel.x
@@ -213,6 +235,7 @@ for ep in range(episodes):
     # Reiniciar entorno
     elements = pygame.sprite.Group()
     player = Player(avatar, elements, (150,150))
+    player2 = Player2(avatar, elements, (150,150))
     leveldata = block_map("level_1.csv")
     init_level(leveldata, elements)
     obs_type = find_next_obstacle(player, elements)
