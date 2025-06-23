@@ -31,13 +31,13 @@ q_table = defaultdict(lambda: [0.0, 0.0])  # Q-table inicializada con ceros
 # Parámetros de aprendizaje por refuerzo
 alpha = 0.3     # tasa de aprendizaje
 gamma = 0.9    # factor de descuento
-epsilon = 0.1   # tasa de exploración
-episodes = 500
+epsilon = 0.2   # tasa de exploración
+episodes = 300
 max_steps = 5000
 reward_log = []
 
 # Visualización (define desde qué episodio se quiere ver el juego)
-show_from_episode = 490  # Cambia a None si no quieres ver ningún episodio
+show_from_episode = 295  # Cambia a None si no quieres ver ningún episodio
 
 # -------------- Clases del Juego --------------
 
@@ -252,7 +252,7 @@ for ep in range(episodes):
     elements = pygame.sprite.Group()
     player = Player(avatar, elements, (150,150))
     player2 = Player2(avatar, elements, (150,150))
-    leveldata = block_map("level_2.csv")
+    leveldata = block_map("level_1.csv")
     init_level(leveldata, elements)
     obs_type = find_next_obstacle(player, elements)
     state = get_state(player, obs_type)
@@ -260,7 +260,8 @@ for ep in range(episodes):
 
     # ¿Renderizar este episodio?
     render = show_from_episode is not None and ep+1 >= show_from_episode
-
+    counter = 0
+    r0 = 0
     for s in range(max_steps):
 
         # Manejo de eventos (cierre de ventana)
@@ -279,6 +280,14 @@ for ep in range(episodes):
         q_table[state][action] = (1 - alpha) * old + alpha * (reward + gamma * max(q_table[next_state]))
         state = next_state
         if done: break
+    if total_r - r0 <=5:
+        counter+=1
+    
+    r0 = total_r
+    if counter>=5:
+        epsilon=0.2
+        counter = 0
+        print("-")
     reward_log.append(total_r)
     print(f"Ep {ep+1}/{episodes}, reward={total_r:.2f}")
     epsilon = epsilon *0.99
