@@ -1,1 +1,1 @@
-# Uso de RL en el juego Geometry Dash
+# Uso de RL en el videojuego Geometry Dash
