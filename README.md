@@ -118,19 +118,7 @@ Convergencia hacia una política estable
 
 Capacidad de completar el nivel consistentemente
 
-Los gráficos de desempeño pueden generarse con:
 
-python graficos.py
-🚀 Cómo Ejecutar
-1️⃣ Clonar el repositorio
-git clone https://github.com/tu_usuario/tu_repo.git
-cd tu_repo
-2️⃣ Instalar dependencias
-pip install -r requirements.txt
-3️⃣ Ejecutar entrenamiento
-python main.py
-4️⃣ Ejecutar interfaz visual (opcional)
-streamlit run pydash_streamlit_completo.py
 📚 Conceptos Aplicados
 
 Markov Decision Process (MDP)
